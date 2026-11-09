@@ -5,7 +5,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
 public final class ProtectionEvents {
     private ProtectionEvents() {}
@@ -31,13 +30,6 @@ public final class ProtectionEvents {
             BlockPos clicked = hit.getBlockPos();
             var claim = ProtectionStorage.find(level.dimension().identifier().toString(), clicked);
             if (claim != null && !ProtectionStorage.canInteract(claim, player.getUUID())) return InteractionResult.FAIL;
-            if (player.getItemInHand(hand).is(Items.LODESTONE) && hit.getDirection() == net.minecraft.core.Direction.UP) {
-                int size = ProtectionStorage.claimSizeForBase(level.getBlockState(clicked));
-                BlockPos core = clicked.relative(hit.getDirection());
-                if (size > 0 && ProtectionStorage.overlaps(level.dimension().identifier().toString(), core.getX(), core.getZ(), size)) {
-                    return InteractionResult.FAIL;
-                }
-            }
             return InteractionResult.PASS;
         });
         ServerLivingEntityEvents.ALLOW_DAMAGE.register((entity, source, amount) -> {
