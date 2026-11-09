@@ -11,7 +11,7 @@ public final class ProtectionEvents {
     public static void register() {
         PlayerBlockBreakEvents.BEFORE.register((world, player, pos, state, blockEntity) -> {
             if (!(world instanceof ServerLevel level)) return true;
-            ProtectionStorage.Claim claim = ProtectionStorage.find(level.dimension().location().toString(), pos);
+            ProtectionStorage.Claim claim = ProtectionStorage.find(level.dimension().identifier().toString(), pos);
             if (claim == null) return true;
             if (claim.isCore(pos)) {
                 if (!(player instanceof ServerPlayer sp) || !claim.owner.equals(sp.getUUID().toString())) return false;
@@ -28,12 +28,12 @@ public final class ProtectionEvents {
         UseBlockCallback.EVENT.register((player, world, hand, hit) -> {
             if (!(world instanceof ServerLevel level) || player.isSpectator()) return InteractionResult.PASS;
             BlockPos clicked = hit.getBlockPos();
-            var claim = ProtectionStorage.find(level.dimension().location().toString(), clicked);
+            var claim = ProtectionStorage.find(level.dimension().identifier().toString(), clicked);
             if (claim != null && !ProtectionStorage.canInteract(claim, player.getUUID())) return InteractionResult.FAIL;
             if (player.getItemInHand(hand).is(Items.LODESTONE) && hit.getDirection() == net.minecraft.core.Direction.UP) {
                 int size = ProtectionStorage.claimSizeForBase(level.getBlockState(clicked));
                 BlockPos core = clicked.relative(hit.getDirection());
-                if (size > 0 && ProtectionStorage.overlaps(level.dimension().location().toString(), core.getX(), core.getZ(), size)) {
+                if (size > 0 && ProtectionStorage.overlaps(level.dimension().identifier().toString(), core.getX(), core.getZ(), size)) {
                     return InteractionResult.FAIL;
                 }
             }
@@ -41,12 +41,12 @@ public final class ProtectionEvents {
         });
         AttackEntityCallback.EVENT.register((player, world, hand, entity, hit) -> {
             if (!(world instanceof ServerLevel level)) return InteractionResult.PASS;
-            var claim = ProtectionStorage.find(level.dimension().location().toString(), entity.blockPosition());
+            var claim = ProtectionStorage.find(level.dimension().identifier().toString(), entity.blockPosition());
             return claim != null && !ProtectionStorage.canInteract(claim, player.getUUID()) ? InteractionResult.FAIL : InteractionResult.PASS;
         });
         UseEntityCallback.EVENT.register((player, world, hand, entity, hit) -> {
             if (!(world instanceof ServerLevel level)) return InteractionResult.PASS;
-            var claim = ProtectionStorage.find(level.dimension().location().toString(), entity.blockPosition());
+            var claim = ProtectionStorage.find(level.dimension().identifier().toString(), entity.blockPosition());
             return claim != null && !ProtectionStorage.canInteract(claim, player.getUUID()) ? InteractionResult.FAIL : InteractionResult.PASS;
         });
     }

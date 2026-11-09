@@ -15,9 +15,10 @@ loom {
     splitEnvironmentSourceSets()
     mods { "zairoq_protections" { sourceSet sourceSets.main } }
 }
+def modVersion = project.version
 processResources {
-    inputs.property "version", project.version
-    filesMatching("fabric.mod.json") { expand "version": project.version }
+    inputs.property "version", modVersion
+    filesMatching("fabric.mod.json") { expand "version": modVersion }
 }
 tasks.withType(JavaCompile).configureEach {
     options.release = 25

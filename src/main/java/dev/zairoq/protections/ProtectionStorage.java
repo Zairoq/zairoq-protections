@@ -90,11 +90,11 @@ public final class ProtectionStorage {
     }
     public static Claim create(MinecraftServer server, ServerPlayer owner, Level level,
                                BlockPos basePos, BlockPos lodestonePos, int size, String mineral) {
-        String dimension = level.dimension().location().toString();
+        String dimension = level.dimension().identifier().toString();
         if (!storageHealthy || overlaps(dimension, lodestonePos.getX(), lodestonePos.getZ(), size)) return null;
         Claim claim = new Claim();
         claim.id = UUID.randomUUID().toString().substring(0, 8);
-        claim.owner = owner.getUUID().toString(); claim.ownerName = owner.getGameProfile().getName();
+        claim.owner = owner.getUUID().toString(); claim.ownerName = owner.getGameProfile().name();
         claim.dimension = dimension; claim.centerX = lodestonePos.getX(); claim.centerZ = lodestonePos.getZ(); claim.size = size;
         claim.coreX = lodestonePos.getX(); claim.coreY = lodestonePos.getY(); claim.coreZ = lodestonePos.getZ();
         claim.baseX = basePos.getX(); claim.baseY = basePos.getY(); claim.baseZ = basePos.getZ(); claim.mineral = mineral;
@@ -103,17 +103,17 @@ public final class ProtectionStorage {
     public static boolean remove(MinecraftServer server, Claim claim) {
         boolean removed = CLAIMS.remove(claim); if (removed) save(server); return removed;
     }
-    public static boolean isProtected(Level level, BlockPos pos) { return find(level.dimension().location().toString(), pos) != null; }
+    public static boolean isProtected(Level level, BlockPos pos) { return find(level.dimension().identifier().toString(), pos) != null; }
     public static int claimSizeForBase(net.minecraft.world.level.block.state.BlockState state) {
         if (state.is(Blocks.COAL_BLOCK)) return 10;
-        if (state.is(Blocks.COPPER_BLOCK)) return 20;
+        if (state.is(Blocks.COPPER_BLOCK.weathering().unaffected())) return 20;
         if (state.is(Blocks.DIAMOND_BLOCK)) return 50;
         if (state.is(Blocks.NETHERITE_BLOCK)) return 100;
         return 0;
     }
     public static String mineralName(net.minecraft.world.level.block.state.BlockState state) {
         if (state.is(Blocks.COAL_BLOCK)) return "coal";
-        if (state.is(Blocks.COPPER_BLOCK)) return "copper";
+        if (state.is(Blocks.COPPER_BLOCK.weathering().unaffected())) return "copper";
         if (state.is(Blocks.DIAMOND_BLOCK)) return "diamond";
         if (state.is(Blocks.NETHERITE_BLOCK)) return "netherite";
         return "unknown";
