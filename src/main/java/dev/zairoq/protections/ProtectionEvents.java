@@ -9,6 +9,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.ChatFormatting;
+import net.minecraft.network.protocol.game.ClientboundSetActionBarTextPacket;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
@@ -85,14 +86,14 @@ public final class ProtectionEvents {
                 if (current != null) {
                     String place = current.owner.equals(player.getUUID().toString())
                             ? "your protection" : current.ownerName + "'s protection";
-                    player.displayClientMessage(Component.literal("Entered " + place)
-                            .withStyle(style -> style.withColor(ChatFormatting.DARK_GRAY).withItalic(true)), true);
+                    sendActionBar(player, Component.literal("Entered " + place)
+                            .withStyle(style -> style.withColor(ChatFormatting.DARK_GRAY).withItalic(true)));
                     PLAYER_CLAIMS.put(player.getUUID(), new ClaimPresence(currentId,
                             current.owner.equals(player.getUUID().toString()) ? "your protection" : current.ownerName + "'s protection"));
                 } else {
                     if (previous != null) {
-                        player.displayClientMessage(Component.literal("Left " + previous.label)
-                                .withStyle(style -> style.withColor(ChatFormatting.DARK_GRAY).withItalic(true)), true);
+                        sendActionBar(player, Component.literal("Left " + previous.label)
+                                .withStyle(style -> style.withColor(ChatFormatting.DARK_GRAY).withItalic(true)));
                         PLAYER_CLAIMS.remove(player.getUUID());
                     }
                 }
@@ -100,6 +101,10 @@ public final class ProtectionEvents {
         });
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) ->
                 PLAYER_CLAIMS.remove(handler.player.getUUID()));
+    }
+
+    private static void sendActionBar(ServerPlayer player, Component message) {
+        player.connection.send(new ClientboundSetActionBarTextPacket(message));
     }
 
     private record ClaimPresence(String key, String label) {}

@@ -2,7 +2,8 @@ package dev.zairoq.protections.mixin;
 
 import dev.zairoq.protections.ProtectionItems;
 import dev.zairoq.protections.ProtectionStorage;
-import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.TextColor;
+import net.minecraft.network.protocol.game.ClientboundSetActionBarTextPacket;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -47,15 +48,17 @@ public abstract class BlockItemMixin {
 
         var claim = ProtectionStorage.createProtectionStone(level.getServer(), player, level, core, stone.size(), stone.mineral());
         if (claim != null) {
-            ChatFormatting tierColor = switch (stone.mineral()) {
-                case "coal" -> ChatFormatting.GRAY;
-                case "copper" -> ChatFormatting.GOLD;
-                case "diamond" -> ChatFormatting.AQUA;
-                case "netherite" -> ChatFormatting.DARK_GRAY;
-                default -> ChatFormatting.WHITE;
+            int tierColor = switch (stone.mineral()) {
+                case "coal" -> 0xB0B0B0;
+                case "copper" -> 0xC47A3A;
+                case "diamond" -> 0x55DDEE;
+                case "netherite" -> 0x555555;
+                default -> 0xFFFFFF;
             };
-            player.displayClientMessage(Component.literal("Successfully claimed this area! A " + stone.size()
-                    + "-block radius protection has been placed.").withStyle(tierColor), true);
+            Component message = Component.literal("Successfully claimed this area! A " + stone.size()
+                    + "-block radius protection has been placed.")
+                    .withStyle(style -> style.withColor(TextColor.fromRgb(tierColor)));
+            player.connection.send(new ClientboundSetActionBarTextPacket(message));
             return;
         }
 
