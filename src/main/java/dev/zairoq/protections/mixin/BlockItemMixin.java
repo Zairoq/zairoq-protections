@@ -21,21 +21,27 @@ public abstract class BlockItemMixin {
     @Inject(method = "place", at = @At("HEAD"), cancellable = true)
     private void zairoq$protectBlockPlacement(BlockPlaceContext context, CallbackInfoReturnable<InteractionResult> cir) {
         if (!(context.getLevel() instanceof ServerLevel level) || context.getPlayer() == null) return;
-        BlockPos target = context.getPlacePos();
+
+        BlockPos target = context.getClickedPos();
         var claim = ProtectionStorage.find(level.dimension().identifier().toString(), target);
-        if (claim != null && !ProtectionStorage.canBuild(claim, context.getPlayer().getUUID())) cir.setReturnValue(InteractionResult.FAIL);
+        if (claim != null && !ProtectionStorage.canBuild(claim, context.getPlayer().getUUID())) {
+            cir.setReturnValue(InteractionResult.FAIL);
+            return;
+        }
+
+        // Capture before vanilla shrinks the held stack (which may become EMPTY).
+        ProtectionItems.capturePlacement(context);
     }
 
     @Inject(method = "place", at = @At("RETURN"))
     private void zairoq$createProtectionStoneClaim(BlockPlaceContext context, CallbackInfoReturnable<InteractionResult> cir) {
-        if (!cir.getReturnValue().consumesAction()) return;
+        ProtectionItems.PendingPlacement pending = ProtectionItems.takePlacement(context);
+        if (pending == null || !cir.getReturnValue().consumesAction()) return;
         if (!(context.getLevel() instanceof ServerLevel level)) return;
         if (!(context.getPlayer() instanceof ServerPlayer player)) return;
 
-        ProtectionItems.StoneData stone = ProtectionItems.read(context.getItemInHand());
-        if (stone == null) return;
-
-        BlockPos core = context.getPlacePos();
+        ProtectionItems.StoneData stone = pending.stone();
+        BlockPos core = pending.pos();
         if (!level.getBlockState(core).is(Blocks.LODESTONE)) return;
 
         var claim = ProtectionStorage.createProtectionStone(level.getServer(), player, level, core, stone.size(), stone.mineral());
