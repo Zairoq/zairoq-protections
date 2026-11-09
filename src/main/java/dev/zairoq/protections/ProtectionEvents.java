@@ -1,4 +1,5 @@
 package dev.zairoq.protections;
+
 import net.fabricmc.fabric.api.event.player.*;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.minecraft.core.BlockPos;
@@ -6,11 +7,12 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.item.ItemEntity;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Blocks;
+
 public final class ProtectionEvents {
     private ProtectionEvents() {}
+
     public static void register() {
         PlayerBlockBreakEvents.BEFORE.register((world, player, pos, state, blockEntity) -> {
             if (!(world instanceof ServerLevel level)) return true;
@@ -20,11 +22,11 @@ public final class ProtectionEvents {
                 if (!(player instanceof ServerPlayer sp) || !claim.owner.equals(sp.getUUID().toString())) return false;
                 boolean craftedProtectionStone = claim.coreX == claim.baseX && claim.coreY == claim.baseY && claim.coreZ == claim.baseZ;
                 if (craftedProtectionStone) {
-                    Item protectionItem = ProtectionItems.forMineral(claim.mineral);
-                    if (protectionItem == null) return false;
+                    ItemStack protectionStack = ProtectionItems.create(claim.mineral);
+                    if (protectionStack.isEmpty()) return false;
                     ProtectionStorage.remove(level.getServer(), claim);
                     level.setBlock(pos, Blocks.AIR.defaultBlockState(), 3);
-                    level.addFreshEntity(new ItemEntity(level, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, new ItemStack(protectionItem)));
+                    level.addFreshEntity(new ItemEntity(level, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, protectionStack));
                     player.sendSystemMessage(net.minecraft.network.chat.Component.literal("Claim removed."));
                     return false;
                 }

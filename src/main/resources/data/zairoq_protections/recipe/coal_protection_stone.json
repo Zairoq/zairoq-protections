@@ -1,12 +1,13 @@
 {
   "type": "minecraft:crafting_shapeless",
   "category": "misc",
-  "ingredients": [
-    "minecraft:lodestone",
-    "minecraft:coal_block"
-  ],
+  "ingredients": ["minecraft:lodestone", "minecraft:coal_block"],
   "result": {
-    "id": "zairoq_protections:coal_protection_stone",
-    "count": 1
+    "id": "minecraft:lodestone",
+    "count": 1,
+    "components": {
+      "minecraft:custom_name": {"text": "Coal Protection Stone", "italic": false},
+      "minecraft:custom_data": {"zairoq_protection": {"mineral": "coal", "size": 10}}
+    }
   }
 }

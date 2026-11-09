@@ -1,12 +1,13 @@
 {
   "type": "minecraft:crafting_shapeless",
   "category": "misc",
-  "ingredients": [
-    "minecraft:lodestone",
-    "minecraft:netherite_block"
-  ],
+  "ingredients": ["minecraft:lodestone", "minecraft:netherite_block"],
   "result": {
-    "id": "zairoq_protections:netherite_protection_stone",
-    "count": 1
+    "id": "minecraft:lodestone",
+    "count": 1,
+    "components": {
+      "minecraft:custom_name": {"text": "Netherite Protection Stone", "italic": false},
+      "minecraft:custom_data": {"zairoq_protection": {"mineral": "netherite", "size": 100}}
+    }
   }
 }

@@ -3,11 +3,11 @@
   "id": "zairoq_protections",
   "version": "${version}",
   "name": "Zairoq Protections",
-  "description": "Server-side land claims created with crafted Protection Stones.",
+  "description": "Server-side land claims created with vanilla Protection Stones.",
   "authors": ["Zairoq"],
   "contact": {"sources": "https://github.com/Zairoq/zairoq-protections"},
   "license": "MIT",
-  "environment": "*",
+  "environment": "server",
   "entrypoints": {"main": ["dev.zairoq.protections.ZairoqProtections"]},
   "mixins": ["zairoq_protections.mixins.json"],
   "depends": {"fabricloader": ">=0.20.1", "minecraft": "~26.3", "java": ">=25", "fabric-api": "*"}

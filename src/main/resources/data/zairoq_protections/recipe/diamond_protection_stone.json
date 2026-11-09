@@ -1,12 +1,13 @@
 {
   "type": "minecraft:crafting_shapeless",
   "category": "misc",
-  "ingredients": [
-    "minecraft:lodestone",
-    "minecraft:diamond_block"
-  ],
+  "ingredients": ["minecraft:lodestone", "minecraft:diamond_block"],
   "result": {
-    "id": "zairoq_protections:diamond_protection_stone",
-    "count": 1
+    "id": "minecraft:lodestone",
+    "count": 1,
+    "components": {
+      "minecraft:custom_name": {"text": "Diamond Protection Stone", "italic": false},
+      "minecraft:custom_data": {"zairoq_protection": {"mineral": "diamond", "size": 50}}
+    }
   }
 }

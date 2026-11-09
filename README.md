@@ -1,6 +1,6 @@
 # Zairoq Protections
 
-Server-side Fabric land-claim mod for Minecraft 26.3.
+Server-side Fabric land-claim mod for Minecraft 26.3. Only the dedicated server needs this mod; players can join with an unmodified vanilla client.
 
 ## Crafting Protection Stones
 
@@ -13,9 +13,9 @@ Craft one of the following combinations in the crafting table:
 | Lodestone + Diamond Block | Diamond Protection Stone | 50 x 50 |
 | Lodestone + Netherite Block | Netherite Protection Stone | 100 x 100 |
 
-Place the crafted Protection Stone to create a claim centered on that block, protecting the entire build height of that dimension. Claims cannot overlap in the same dimension. Each tier is identified by its registered item ID, not by its display name or lore.
+Each recipe creates a vanilla Lodestone carrying server-readable `minecraft:custom_data` and a display name. No custom item registry or client-side assets are required. Place the crafted Protection Stone to create a claim centered on that block, protecting the entire build height of that dimension. Claims cannot overlap in the same dimension.
 
-The Protection Stone is the claim core. Only its owner can break it; doing so removes the claim and drops the same Protection Stone item. Existing claims created by the former mineral-block + Lodestone method remain readable and retain their original core coordinates.
+The Protection Stone is the claim core. Only its owner can break it; doing so removes the claim and drops the same tier of Protection Stone. Existing claims created by the former mineral-block + Lodestone method remain readable and retain their original core coordinates.
 
 ## Commands
 
@@ -33,11 +33,11 @@ Owners and co-owners can build. Trusted players can interact with blocks and ent
 
 ## Persistence
 
-Claims are saved in `<world>/data/zairoq_protections.json` and are flushed on changes and server saves. Keep this file with the world backup. The new core uses the existing claim data format; no migration is required.
+Claims are saved in `<world>/data/zairoq_protections.json` and are flushed on changes and server saves. Keep this file with the world backup. The claim data format is unchanged; no migration is required.
 
 ## Installation
 
-Install the mod on the dedicated server. It does not add client-side content or require a client installation.
+Install the mod on the dedicated Fabric server only. Clients do not need Fabric, Fabric API, or Zairoq Protections.
 
 ## Build
 

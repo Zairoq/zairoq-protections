@@ -1,5 +1,6 @@
 package dev.zairoq.protections.mixin;
-import dev.zairoq.protections.ProtectionStoneItem;
+
+import dev.zairoq.protections.ProtectionItems;
 import dev.zairoq.protections.ProtectionStorage;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
@@ -14,6 +15,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+
 @Mixin(net.minecraft.world.item.BlockItem.class)
 public abstract class BlockItemMixin {
     @Inject(method = "place", at = @At("HEAD"), cancellable = true)
@@ -23,22 +25,27 @@ public abstract class BlockItemMixin {
         var claim = ProtectionStorage.find(level.dimension().identifier().toString(), target);
         if (claim != null && !ProtectionStorage.canBuild(claim, context.getPlayer().getUUID())) cir.setReturnValue(InteractionResult.FAIL);
     }
+
     @Inject(method = "place", at = @At("RETURN"))
     private void zairoq$createProtectionStoneClaim(BlockPlaceContext context, CallbackInfoReturnable<InteractionResult> cir) {
         if (!cir.getReturnValue().consumesAction()) return;
         if (!(context.getLevel() instanceof ServerLevel level)) return;
         if (!(context.getPlayer() instanceof ServerPlayer player)) return;
-        if (!(context.getItemInHand().getItem() instanceof ProtectionStoneItem stone)) return;
+
+        ProtectionItems.StoneData stone = ProtectionItems.read(context.getItemInHand());
+        if (stone == null) return;
+
         BlockPos core = context.getClickedPos().relative(context.getClickedFace());
         if (!level.getBlockState(core).is(Blocks.LODESTONE)) return;
-        var claim = ProtectionStorage.createProtectionStone(level.getServer(), player, level, core, stone.claimSize(), stone.mineral());
+
+        var claim = ProtectionStorage.createProtectionStone(level.getServer(), player, level, core, stone.size(), stone.mineral());
         if (claim != null) {
-            player.sendSystemMessage(Component.literal("Protection created: " + stone.claimSize() + "x" + stone.claimSize() + " blocks, full world height."));
+            player.sendSystemMessage(Component.literal("Protection created: " + stone.size() + "x" + stone.size() + " blocks, full world height."));
             return;
         }
-        // Placement and claim creation are atomic from the player's perspective.
+
         level.setBlock(core, Blocks.AIR.defaultBlockState(), 3);
-        ItemStack refund = new ItemStack(stone, 1);
+        ItemStack refund = ProtectionItems.create(stone.mineral());
         if (!player.getInventory().add(refund)) {
             level.addFreshEntity(new ItemEntity(level, player.getX(), player.getY(), player.getZ(), refund));
         }
