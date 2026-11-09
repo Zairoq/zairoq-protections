@@ -12,6 +12,16 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(net.minecraft.world.item.BlockItem.class)
 public abstract class BlockItemMixin {
+    @Inject(method = "place", at = @At("HEAD"), cancellable = true)
+    private void zairoq$protectBlockPlacement(BlockPlaceContext context, CallbackInfoReturnable<InteractionResult> cir) {
+        if (!(context.getLevel() instanceof ServerLevel level) || context.getPlayer() == null) return;
+        BlockPos target = context.getPlacementPos();
+        var claim = ProtectionStorage.find(level.dimension().location().toString(), target);
+        if (claim != null && !ProtectionStorage.canBuild(claim, context.getPlayer().getUUID())) {
+            cir.setReturnValue(InteractionResult.FAIL);
+        }
+    }
+
     @Inject(method = "place", at = @At("RETURN"))
     private void zairoq$registerLodestoneClaim(BlockPlaceContext context, CallbackInfoReturnable<InteractionResult> cir) {
         if (!cir.getReturnValue().consumesAction()) return;

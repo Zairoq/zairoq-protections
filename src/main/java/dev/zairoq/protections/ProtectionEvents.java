@@ -27,15 +27,15 @@ public final class ProtectionEvents {
         });
         UseBlockCallback.EVENT.register((player, world, hand, hit) -> {
             if (!(world instanceof ServerLevel level) || player.isSpectator()) return InteractionResult.PASS;
-            BlockPos clicked = hit.getBlockPos(), target = clicked.relative(hit.getDirection());
-            String dim = level.dimension().location().toString();
-            ProtectionStorage.Claim clickedClaim = ProtectionStorage.find(dim, clicked);
-            if (clickedClaim != null && !ProtectionStorage.canInteract(clickedClaim, player.getUUID())) return InteractionResult.FAIL;
-            ProtectionStorage.Claim targetClaim = ProtectionStorage.find(dim, target);
-            if (targetClaim != null && !ProtectionStorage.canBuild(targetClaim, player.getUUID())) return InteractionResult.FAIL;
+            BlockPos clicked = hit.getBlockPos();
+            var claim = ProtectionStorage.find(level.dimension().location().toString(), clicked);
+            if (claim != null && !ProtectionStorage.canInteract(claim, player.getUUID())) return InteractionResult.FAIL;
             if (player.getItemInHand(hand).is(Items.LODESTONE) && hit.getDirection() == net.minecraft.core.Direction.UP) {
                 int size = ProtectionStorage.claimSizeForBase(level.getBlockState(clicked));
-                if (size > 0 && ProtectionStorage.overlaps(dim, target.getX(), target.getZ(), size)) return InteractionResult.FAIL;
+                BlockPos core = clicked.relative(hit.getDirection());
+                if (size > 0 && ProtectionStorage.overlaps(level.dimension().location().toString(), core.getX(), core.getZ(), size)) {
+                    return InteractionResult.FAIL;
+                }
             }
             return InteractionResult.PASS;
         });

@@ -19,25 +19,27 @@ public final class ProtectionStorage {
     private static final Type CLAIM_LIST = new TypeToken<List<Claim>>() {}.getType();
     private static final List<Claim> CLAIMS = new ArrayList<>();
     private static MinecraftServer activeServer;
+    private static boolean storageHealthy = true;
     private ProtectionStorage() {}
     public static void registerLifecycle() {
         ServerLifecycleEvents.SERVER_STARTED.register(server -> { activeServer = server; load(server); });
         ServerLifecycleEvents.BEFORE_SAVE.register((server, flush, force) -> { if (server == activeServer) save(server); });
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
-            if (server == activeServer) { save(server); CLAIMS.clear(); activeServer = null; }
+            if (server == activeServer) { save(server); CLAIMS.clear(); activeServer = null; storageHealthy = true; }
         });
     }
     private static Path dataFile(MinecraftServer server) {
         return server.getWorldPath(LevelResource.ROOT).resolve("data").resolve("zairoq_protections.json");
     }
     private static void load(MinecraftServer server) {
-        CLAIMS.clear();
+        CLAIMS.clear(); storageHealthy = true;
         Path file = dataFile(server);
         if (!Files.exists(file)) return;
         try {
             List<Claim> loaded = GSON.fromJson(Files.readString(file), CLAIM_LIST);
             if (loaded != null) for (Claim claim : loaded) {
-                if (claim != null && claim.id != null && claim.owner != null && claim.dimension != null && claim.size > 0) {
+                if (claim != null && claim.id != null && claim.owner != null && claim.dimension != null
+                        && claim.size > 0 && claim.size <= 100) {
                     if (claim.coOwners == null) claim.coOwners = new LinkedHashMap<>();
                     if (claim.trusted == null) claim.trusted = new LinkedHashMap<>();
                     CLAIMS.add(claim);
@@ -45,10 +47,15 @@ public final class ProtectionStorage {
             }
             ZairoqProtections.LOGGER.info("Loaded {} land claims.", CLAIMS.size());
         } catch (Exception exception) {
-            ZairoqProtections.LOGGER.error("Could not read claims file {}. Existing file was left untouched.", file, exception);
+            storageHealthy = false;
+            ZairoqProtections.LOGGER.error("Could not read claims file {}. Writes are disabled to preserve the original file.", file, exception);
         }
     }
     public static void save(MinecraftServer server) {
+        if (!storageHealthy) {
+            ZairoqProtections.LOGGER.error("Skipping claim save because the existing claims file failed to load; refusing to overwrite it.");
+            return;
+        }
         Path file = dataFile(server);
         try {
             Files.createDirectories(file.getParent());
@@ -66,10 +73,7 @@ public final class ProtectionStorage {
         for (Claim claim : CLAIMS) if (claim.dimension.equals(dimension) && claim.contains(pos.getX(), pos.getZ())) return claim;
         return null;
     }
-    public static Claim findById(String id) {
-        for (Claim claim : CLAIMS) if (claim.id.equals(id)) return claim;
-        return null;
-    }
+    public static Claim findById(String id) { for (Claim claim : CLAIMS) if (claim.id.equals(id)) return claim; return null; }
     public static boolean canBuild(Claim claim, UUID player) {
         return claim.owner.equals(player.toString()) || claim.coOwners.containsKey(player.toString());
     }
@@ -80,33 +84,26 @@ public final class ProtectionStorage {
     public static boolean overlaps(String dimension, int centerX, int centerZ, int size) {
         int minX = centerX - size / 2, minZ = centerZ - size / 2;
         int maxX = minX + size - 1, maxZ = minZ + size - 1;
-        for (Claim claim : CLAIMS) {
-            if (claim.dimension.equals(dimension) && minX <= claim.maxX() && maxX >= claim.minX()
-                    && minZ <= claim.maxZ() && maxZ >= claim.minZ()) return true;
-        }
+        for (Claim claim : CLAIMS) if (claim.dimension.equals(dimension) && minX <= claim.maxX()
+                && maxX >= claim.minX() && minZ <= claim.maxZ() && maxZ >= claim.minZ()) return true;
         return false;
     }
     public static Claim create(MinecraftServer server, ServerPlayer owner, Level level,
                                BlockPos basePos, BlockPos lodestonePos, int size, String mineral) {
         String dimension = level.dimension().location().toString();
-        if (overlaps(dimension, lodestonePos.getX(), lodestonePos.getZ(), size)) return null;
+        if (!storageHealthy || overlaps(dimension, lodestonePos.getX(), lodestonePos.getZ(), size)) return null;
         Claim claim = new Claim();
         claim.id = UUID.randomUUID().toString().substring(0, 8);
-        claim.owner = owner.getUUID().toString();
-        claim.ownerName = owner.getGameProfile().getName();
-        claim.dimension = dimension;
-        claim.centerX = lodestonePos.getX(); claim.centerZ = lodestonePos.getZ(); claim.size = size;
+        claim.owner = owner.getUUID().toString(); claim.ownerName = owner.getGameProfile().getName();
+        claim.dimension = dimension; claim.centerX = lodestonePos.getX(); claim.centerZ = lodestonePos.getZ(); claim.size = size;
         claim.coreX = lodestonePos.getX(); claim.coreY = lodestonePos.getY(); claim.coreZ = lodestonePos.getZ();
-        claim.baseX = basePos.getX(); claim.baseY = basePos.getY(); claim.baseZ = basePos.getZ();
-        claim.mineral = mineral;
+        claim.baseX = basePos.getX(); claim.baseY = basePos.getY(); claim.baseZ = basePos.getZ(); claim.mineral = mineral;
         CLAIMS.add(claim); save(server); return claim;
     }
     public static boolean remove(MinecraftServer server, Claim claim) {
         boolean removed = CLAIMS.remove(claim); if (removed) save(server); return removed;
     }
-    public static boolean isProtected(Level level, BlockPos pos) {
-        return find(level.dimension().location().toString(), pos) != null;
-    }
+    public static boolean isProtected(Level level, BlockPos pos) { return find(level.dimension().location().toString(), pos) != null; }
     public static int claimSizeForBase(net.minecraft.world.level.block.state.BlockState state) {
         if (state.is(Blocks.COAL_BLOCK)) return 10;
         if (state.is(Blocks.COPPER_BLOCK)) return 20;
@@ -133,7 +130,7 @@ public final class ProtectionStorage {
         public boolean contains(int x, int z) { return x >= minX() && x <= maxX() && z >= minZ() && z <= maxZ(); }
         public boolean isCore(BlockPos pos) {
             return (pos.getX() == coreX && pos.getY() == coreY && pos.getZ() == coreZ)
-                    || (pos.getX() == baseX && pos.getY() == baseY && pos.getZ() == baseZ);
+                || (pos.getX() == baseX && pos.getY() == baseY && pos.getZ() == baseZ);
         }
     }
 }
