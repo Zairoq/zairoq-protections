@@ -1,5 +1,6 @@
 package dev.zairoq.protections;
 import net.fabricmc.fabric.api.event.player.*;
+import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -38,6 +39,14 @@ public final class ProtectionEvents {
                 }
             }
             return InteractionResult.PASS;
+        });
+        ServerLivingEntityEvents.ALLOW_DAMAGE.register((entity, source, amount) -> {
+            if (!(entity.level() instanceof ServerLevel level)) return true;
+            var claim = ProtectionStorage.find(level.dimension().identifier().toString(), entity.blockPosition());
+            if (claim == null) return true;
+            var attacker = source.getEntity();
+            return !(attacker instanceof net.minecraft.world.entity.player.Player player)
+                    || ProtectionStorage.canInteract(claim, player.getUUID());
         });
         AttackEntityCallback.EVENT.register((player, world, hand, entity, hit) -> {
             if (!(world instanceof ServerLevel level)) return InteractionResult.PASS;

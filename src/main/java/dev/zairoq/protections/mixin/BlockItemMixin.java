@@ -15,8 +15,8 @@ public abstract class BlockItemMixin {
     @Inject(method = "place", at = @At("HEAD"), cancellable = true)
     private void zairoq$protectBlockPlacement(BlockPlaceContext context, CallbackInfoReturnable<InteractionResult> cir) {
         if (!(context.getLevel() instanceof ServerLevel level) || context.getPlayer() == null) return;
-        BlockPos target = context.getPlacementPos();
-        var claim = ProtectionStorage.find(level.dimension().location().toString(), target);
+        BlockPos target = context.getClickedPos().relative(context.getClickedFace());
+        var claim = ProtectionStorage.find(level.dimension().identifier().toString(), target);
         if (claim != null && !ProtectionStorage.canBuild(claim, context.getPlayer().getUUID())) {
             cir.setReturnValue(InteractionResult.FAIL);
         }
