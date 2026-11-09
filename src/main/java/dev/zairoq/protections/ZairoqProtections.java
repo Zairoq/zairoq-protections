@@ -7,7 +7,6 @@ public final class ZairoqProtections implements ModInitializer {
     public static final String MOD_ID = "zairoq_protections";
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
     @Override public void onInitialize() {
-        ProtectionItems.register();
         ProtectionStorage.registerLifecycle();
         ProtectionEvents.register();
         CommandRegistrationCallback.EVENT.register(ProtectionCommands::register);
