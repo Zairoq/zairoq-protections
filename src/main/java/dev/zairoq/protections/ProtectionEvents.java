@@ -5,6 +5,9 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Blocks;
 public final class ProtectionEvents {
     private ProtectionEvents() {}
@@ -15,6 +18,16 @@ public final class ProtectionEvents {
             if (claim == null) return true;
             if (claim.isCore(pos)) {
                 if (!(player instanceof ServerPlayer sp) || !claim.owner.equals(sp.getUUID().toString())) return false;
+                boolean craftedProtectionStone = claim.coreX == claim.baseX && claim.coreY == claim.baseY && claim.coreZ == claim.baseZ;
+                if (craftedProtectionStone) {
+                    Item protectionItem = ProtectionItems.forMineral(claim.mineral);
+                    if (protectionItem == null) return false;
+                    ProtectionStorage.remove(level.getServer(), claim);
+                    level.setBlock(pos, Blocks.AIR.defaultBlockState(), 3);
+                    level.addFreshEntity(new ItemEntity(level, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, new ItemStack(protectionItem)));
+                    player.sendSystemMessage(net.minecraft.network.chat.Component.literal("Claim removed."));
+                    return false;
+                }
                 if (pos.getX() == claim.baseX && pos.getY() == claim.baseY && pos.getZ() == claim.baseZ) {
                     BlockPos core = new BlockPos(claim.coreX, claim.coreY, claim.coreZ);
                     if (level.getBlockState(core).is(Blocks.LODESTONE)) level.removeBlock(core, false);
@@ -37,8 +50,7 @@ public final class ProtectionEvents {
             var claim = ProtectionStorage.find(level.dimension().identifier().toString(), entity.blockPosition());
             if (claim == null) return true;
             var attacker = source.getEntity();
-            return !(attacker instanceof net.minecraft.world.entity.player.Player player)
-                    || ProtectionStorage.canInteract(claim, player.getUUID());
+            return !(attacker instanceof net.minecraft.world.entity.player.Player player) || ProtectionStorage.canInteract(claim, player.getUUID());
         });
         AttackEntityCallback.EVENT.register((player, world, hand, entity, hit) -> {
             if (!(world instanceof ServerLevel level)) return InteractionResult.PASS;

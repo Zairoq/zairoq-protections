@@ -88,6 +88,21 @@ public final class ProtectionStorage {
                 && maxX >= claim.minX() && minZ <= claim.maxZ() && maxZ >= claim.minZ()) return true;
         return false;
     }
+    public static Claim createProtectionStone(MinecraftServer server, ServerPlayer owner, Level level,
+                                              BlockPos corePos, int size, String mineral) {
+        String dimension = level.dimension().identifier().toString();
+        if (!storageHealthy || overlaps(dimension, corePos.getX(), corePos.getZ(), size)) return null;
+        Claim claim = new Claim();
+        claim.id = UUID.randomUUID().toString().substring(0, 8);
+        claim.owner = owner.getUUID().toString(); claim.ownerName = owner.getGameProfile().name();
+        claim.dimension = dimension; claim.centerX = corePos.getX(); claim.centerZ = corePos.getZ(); claim.size = size;
+        claim.coreX = corePos.getX(); claim.coreY = corePos.getY(); claim.coreZ = corePos.getZ();
+        // Equal core/base coordinates mark a claim created by a crafted Protection Stone.
+        claim.baseX = corePos.getX(); claim.baseY = corePos.getY(); claim.baseZ = corePos.getZ();
+        claim.mineral = mineral;
+        CLAIMS.add(claim); save(server); return claim;
+    }
+    /** Kept for compatibility with claims created by the former mineral-block + Lodestone system. */
     public static Claim create(MinecraftServer server, ServerPlayer owner, Level level,
                                BlockPos basePos, BlockPos lodestonePos, int size, String mineral) {
         String dimension = level.dimension().identifier().toString();
@@ -103,7 +118,9 @@ public final class ProtectionStorage {
     public static boolean remove(MinecraftServer server, Claim claim) {
         boolean removed = CLAIMS.remove(claim); if (removed) save(server); return removed;
     }
-    public static boolean isProtected(Level level, BlockPos pos) { return find(level.dimension().identifier().toString(), pos) != null; }
+    public static boolean isProtected(Level level, BlockPos pos) {
+        return find(level.dimension().identifier().toString(), pos) != null;
+    }
     public static int claimSizeForBase(net.minecraft.world.level.block.state.BlockState state) {
         if (state.is(Blocks.COAL_BLOCK)) return 10;
         if (state.is(Blocks.COPPER_BLOCK.weathering().unaffected())) return 20;
