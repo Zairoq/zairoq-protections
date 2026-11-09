@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "zairoq_protections",
+  "version": "${version}",
+  "name": "Zairoq Protections",
+  "description": "Server-side land claims built around mineral blocks and lodestones.",
+  "authors": ["Zairoq"],
+  "contact": {"sources": "https://github.com/Zairoq/zairoq-protections"},
+  "license": "MIT",
+  "environment": "*",
+  "entrypoints": {"main": ["dev.zairoq.protections.ZairoqProtections"]},
+  "mixins": ["zairoq_protections.mixins.json"],
+  "depends": {
+    "fabricloader": ">=0.20.1",
+    "minecraft": "~26.3",
+    "java": ">=25",
+    "fabric-api": "*"
+  }
+}
