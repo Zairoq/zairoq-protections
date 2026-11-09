@@ -1,14 +1,20 @@
 package dev.zairoq.protections;
 
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.component.CustomData;
+import net.minecraft.world.item.context.BlockPlaceContext;
+
+import java.util.IdentityHashMap;
 
 public final class ProtectionItems {
     private static final String DATA_KEY = "zairoq_protection";
+    private static final ThreadLocal<IdentityHashMap<BlockPlaceContext, PendingPlacement>> PENDING_PLACEMENTS =
+            ThreadLocal.withInitial(IdentityHashMap::new);
 
     private ProtectionItems() {}
 
@@ -23,6 +29,24 @@ public final class ProtectionItems {
         int expectedSize = sizeFor(mineral);
         if (expectedSize == 0 || size != expectedSize) return null;
         return new StoneData(mineral, size);
+    }
+
+    /**
+     * Must be called before BlockItem.place consumes the held stack.
+     * The context identity ties the captured item data to this exact placement call.
+     */
+    public static void capturePlacement(BlockPlaceContext context) {
+        StoneData stone = read(context.getItemInHand());
+        if (stone == null) return;
+        PENDING_PLACEMENTS.get().put(context,
+                new PendingPlacement(stone, context.getClickedPos().immutable()));
+    }
+
+    public static PendingPlacement takePlacement(BlockPlaceContext context) {
+        IdentityHashMap<BlockPlaceContext, PendingPlacement> pending = PENDING_PLACEMENTS.get();
+        PendingPlacement result = pending.remove(context);
+        if (pending.isEmpty()) PENDING_PLACEMENTS.remove();
+        return result;
     }
 
     public static ItemStack create(String mineral) {
@@ -62,4 +86,5 @@ public final class ProtectionItems {
     }
 
     public record StoneData(String mineral, int size) {}
+    public record PendingPlacement(StoneData stone, BlockPos pos) {}
 }
