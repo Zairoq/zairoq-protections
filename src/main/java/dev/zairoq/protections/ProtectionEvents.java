@@ -2,15 +2,24 @@ package dev.zairoq.protections;
 
 import net.fabricmc.fabric.api.event.player.*;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.network.chat.Component;
+import net.minecraft.ChatFormatting;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Blocks;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
 public final class ProtectionEvents {
+    private static final Map<UUID, ClaimPresence> PLAYER_CLAIMS = new HashMap<>();
     private ProtectionEvents() {}
 
     public static void register() {
@@ -27,7 +36,7 @@ public final class ProtectionEvents {
                     ProtectionStorage.remove(level.getServer(), claim);
                     level.setBlock(pos, Blocks.AIR.defaultBlockState(), 3);
                     level.addFreshEntity(new ItemEntity(level, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, protectionStack));
-                    player.sendSystemMessage(net.minecraft.network.chat.Component.literal("Claim removed."));
+                    player.sendSystemMessage(Component.literal("Claim removed."));
                     return false;
                 }
                 if (pos.getX() == claim.baseX && pos.getY() == claim.baseY && pos.getZ() == claim.baseZ) {
@@ -35,7 +44,7 @@ public final class ProtectionEvents {
                     if (level.getBlockState(core).is(Blocks.LODESTONE)) level.removeBlock(core, false);
                 }
                 ProtectionStorage.remove(level.getServer(), claim);
-                player.sendSystemMessage(net.minecraft.network.chat.Component.literal("Claim removed."));
+                player.sendSystemMessage(Component.literal("Claim removed."));
                 return true;
             }
             return ProtectionStorage.canBuild(claim, player.getUUID());
@@ -64,5 +73,34 @@ public final class ProtectionEvents {
             var claim = ProtectionStorage.find(level.dimension().identifier().toString(), entity.blockPosition());
             return claim != null && !ProtectionStorage.canInteract(claim, player.getUUID()) ? InteractionResult.FAIL : InteractionResult.PASS;
         });
+
+        // Evaluate only the player's current position and notify only when the claim changes.
+        ServerTickEvents.END_SERVER_TICK.register(server -> {
+            for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+                String dimension = player.level().dimension().identifier().toString();
+                ProtectionStorage.Claim current = ProtectionStorage.find(dimension, player.blockPosition());
+                ClaimPresence previous = PLAYER_CLAIMS.get(player.getUUID());
+                String currentId = current == null ? null : dimension + ":" + current.id;
+                if (previous != null && previous.key.equals(currentId)) continue;
+                if (current != null) {
+                    String place = current.owner.equals(player.getUUID().toString())
+                            ? "your protection" : current.ownerName + "'s protection";
+                    player.displayClientMessage(Component.literal("Entered " + place)
+                            .withStyle(style -> style.withColor(ChatFormatting.DARK_GRAY).withItalic(true)), true);
+                    PLAYER_CLAIMS.put(player.getUUID(), new ClaimPresence(currentId,
+                            current.owner.equals(player.getUUID().toString()) ? "your protection" : current.ownerName + "'s protection"));
+                } else {
+                    if (previous != null) {
+                        player.displayClientMessage(Component.literal("Left " + previous.label)
+                                .withStyle(style -> style.withColor(ChatFormatting.DARK_GRAY).withItalic(true)), true);
+                        PLAYER_CLAIMS.remove(player.getUUID());
+                    }
+                }
+            }
+        });
+        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) ->
+                PLAYER_CLAIMS.remove(handler.player.getUUID()));
     }
+
+    private record ClaimPresence(String key, String label) {}
 }

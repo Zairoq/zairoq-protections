@@ -81,21 +81,22 @@ public final class ProtectionStorage {
         String id = player.toString();
         return claim.owner.equals(id) || claim.coOwners.containsKey(id) || claim.trusted.containsKey(id);
     }
-    public static boolean overlaps(String dimension, int centerX, int centerZ, int size) {
-        int minX = centerX - size / 2, minZ = centerZ - size / 2;
-        int maxX = minX + size - 1, maxZ = minZ + size - 1;
+    /** size is the horizontal radius in blocks, measured from the core block in both X and Z. */
+    public static boolean overlaps(String dimension, int centerX, int centerZ, int radius) {
+        int minX = centerX - radius, minZ = centerZ - radius;
+        int maxX = centerX + radius, maxZ = centerZ + radius;
         for (Claim claim : CLAIMS) if (claim.dimension.equals(dimension) && minX <= claim.maxX()
                 && maxX >= claim.minX() && minZ <= claim.maxZ() && maxZ >= claim.minZ()) return true;
         return false;
     }
     public static Claim createProtectionStone(MinecraftServer server, ServerPlayer owner, Level level,
-                                              BlockPos corePos, int size, String mineral) {
+                                              BlockPos corePos, int radius, String mineral) {
         String dimension = level.dimension().identifier().toString();
-        if (!storageHealthy || overlaps(dimension, corePos.getX(), corePos.getZ(), size)) return null;
+        if (!storageHealthy || overlaps(dimension, corePos.getX(), corePos.getZ(), radius)) return null;
         Claim claim = new Claim();
         claim.id = UUID.randomUUID().toString().substring(0, 8);
         claim.owner = owner.getUUID().toString(); claim.ownerName = owner.getGameProfile().name();
-        claim.dimension = dimension; claim.centerX = corePos.getX(); claim.centerZ = corePos.getZ(); claim.size = size;
+        claim.dimension = dimension; claim.centerX = corePos.getX(); claim.centerZ = corePos.getZ(); claim.size = radius;
         claim.coreX = corePos.getX(); claim.coreY = corePos.getY(); claim.coreZ = corePos.getZ();
         // Equal core/base coordinates mark a claim created by a crafted Protection Stone.
         claim.baseX = corePos.getX(); claim.baseY = corePos.getY(); claim.baseZ = corePos.getZ();
@@ -104,13 +105,13 @@ public final class ProtectionStorage {
     }
     /** Kept for compatibility with claims created by the former mineral-block + Lodestone system. */
     public static Claim create(MinecraftServer server, ServerPlayer owner, Level level,
-                               BlockPos basePos, BlockPos lodestonePos, int size, String mineral) {
+                               BlockPos basePos, BlockPos lodestonePos, int radius, String mineral) {
         String dimension = level.dimension().identifier().toString();
-        if (!storageHealthy || overlaps(dimension, lodestonePos.getX(), lodestonePos.getZ(), size)) return null;
+        if (!storageHealthy || overlaps(dimension, lodestonePos.getX(), lodestonePos.getZ(), radius)) return null;
         Claim claim = new Claim();
         claim.id = UUID.randomUUID().toString().substring(0, 8);
         claim.owner = owner.getUUID().toString(); claim.ownerName = owner.getGameProfile().name();
-        claim.dimension = dimension; claim.centerX = lodestonePos.getX(); claim.centerZ = lodestonePos.getZ(); claim.size = size;
+        claim.dimension = dimension; claim.centerX = lodestonePos.getX(); claim.centerZ = lodestonePos.getZ(); claim.size = radius;
         claim.coreX = lodestonePos.getX(); claim.coreY = lodestonePos.getY(); claim.coreZ = lodestonePos.getZ();
         claim.baseX = basePos.getX(); claim.baseY = basePos.getY(); claim.baseZ = basePos.getZ(); claim.mineral = mineral;
         CLAIMS.add(claim); save(server); return claim;
@@ -137,13 +138,14 @@ public final class ProtectionStorage {
     }
     public static final class Claim {
         public String id, owner, ownerName, dimension, mineral;
+        /** Horizontal radius in X/Z; vertical protection spans the full dimension build height. */
         public int centerX, centerZ, size, coreX, coreY, coreZ, baseX, baseY, baseZ;
         public Map<String, String> coOwners = new LinkedHashMap<>();
         public Map<String, String> trusted = new LinkedHashMap<>();
-        public int minX() { return centerX - size / 2; }
-        public int minZ() { return centerZ - size / 2; }
-        public int maxX() { return minX() + size - 1; }
-        public int maxZ() { return minZ() + size - 1; }
+        public int minX() { return centerX - size; }
+        public int minZ() { return centerZ - size; }
+        public int maxX() { return centerX + size; }
+        public int maxZ() { return centerZ + size; }
         public boolean contains(int x, int z) { return x >= minX() && x <= maxX() && z >= minZ() && z <= maxZ(); }
         public boolean isCore(BlockPos pos) {
             return (pos.getX() == coreX && pos.getY() == coreY && pos.getZ() == coreZ)

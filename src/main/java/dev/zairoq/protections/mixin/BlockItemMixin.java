@@ -2,6 +2,7 @@ package dev.zairoq.protections.mixin;
 
 import dev.zairoq.protections.ProtectionItems;
 import dev.zairoq.protections.ProtectionStorage;
+import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -46,7 +47,15 @@ public abstract class BlockItemMixin {
 
         var claim = ProtectionStorage.createProtectionStone(level.getServer(), player, level, core, stone.size(), stone.mineral());
         if (claim != null) {
-            player.sendSystemMessage(Component.literal("Protection created: " + stone.size() + "x" + stone.size() + " blocks, full world height."));
+            ChatFormatting tierColor = switch (stone.mineral()) {
+                case "coal" -> ChatFormatting.GRAY;
+                case "copper" -> ChatFormatting.GOLD;
+                case "diamond" -> ChatFormatting.AQUA;
+                case "netherite" -> ChatFormatting.DARK_GRAY;
+                default -> ChatFormatting.WHITE;
+            };
+            player.displayClientMessage(Component.literal("Successfully claimed this area! A " + stone.size()
+                    + "-block radius protection has been placed.").withStyle(tierColor), true);
             return;
         }
 
