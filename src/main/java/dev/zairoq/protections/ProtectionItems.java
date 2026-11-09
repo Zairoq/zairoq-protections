@@ -1,7 +1,7 @@
 package dev.zairoq.protections;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
 public final class ProtectionItems {
     public static Item COAL, COPPER, DIAMOND, NETHERITE;
@@ -13,7 +13,7 @@ public final class ProtectionItems {
         NETHERITE = register("netherite_protection_stone", 100, "netherite");
     }
     private static Item register(String path, int size, String mineral) {
-        ResourceLocation id = ResourceLocation.fromNamespaceAndPath(ZairoqProtections.MOD_ID, path);
+        Identifier id = Identifier.fromNamespaceAndPath(ZairoqProtections.MOD_ID, path);
         return Registry.register(BuiltInRegistries.ITEM, id, new ProtectionStoneItem(id, size, mineral));
     }
     public static Item forMineral(String mineral) {

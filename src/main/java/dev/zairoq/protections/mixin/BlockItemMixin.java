@@ -6,6 +6,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.block.Blocks;
@@ -38,7 +39,9 @@ public abstract class BlockItemMixin {
         // Placement and claim creation are atomic from the player's perspective.
         level.setBlock(core, Blocks.AIR.defaultBlockState(), 3);
         ItemStack refund = new ItemStack(stone, 1);
-        if (!player.getInventory().add(refund)) player.drop(refund, false);
+        if (!player.getInventory().add(refund)) {
+            level.addFreshEntity(new ItemEntity(level, player.getX(), player.getY(), player.getZ(), refund));
+        }
         player.sendSystemMessage(Component.literal("Invalid protection: this area overlaps another claim or claim storage is unavailable. The item was returned."));
     }
 }
